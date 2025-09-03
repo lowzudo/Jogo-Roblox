@@ -68,7 +68,6 @@ end
 
 -- Função animação de 1 carta
 local function animateCard(card)
-	print("[DEBUG] Iniciando animação de 1 carta:", card.Name)
 	local back = card:FindFirstChild("Back")
 	local front = card:FindFirstChild("Front")
 
@@ -86,24 +85,20 @@ local function animateCard(card)
 	local upGoal = { Position = UDim2.fromScale(0.5, 0.17) }
 	local moveUpTween = TweenService:Create(card, moveUpInfo, upGoal)
 	moveUpTween:Play()
-	print("[DEBUG] Tween de subida iniciado")
 
 	moveUpTween.Completed:Connect(function()
-		print("[DEBUG] Tween de subida finalizado -> iniciando flip")
 		local flipInfo = TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 		local shrinkGoal = { Size = UDim2.new(0, 0, originalSize.Y.Scale, 0) }
 		local shrinkTween = TweenService:Create(card, flipInfo, shrinkGoal)
 		shrinkTween:Play()
 
 		shrinkTween.Completed:Connect(function()
-			print("[DEBUG] Flip metade concluído, trocando para frente")
 			back.Visible = false
 			front.Visible = true
 
 			local expandTween = TweenService:Create(card, flipInfo, { Size = originalSize })
 			expandTween:Play()
 			expandTween.Completed:Connect(function()
-				print("[DEBUG] Animação concluída para carta:", card.Name)
 				-- remove a carta após 1 segundo
 				fadeOutCard(card,0.5)
 				script.Parent.Active = true
@@ -114,7 +109,6 @@ end
 
 -- Função animação de 2 cartas
 local function animateTwoCards(card1, card2)
-	print("[DEBUG] Iniciando animação de 2 cartas:", card1.Name, card2.Name)
 
 	local function animateSingleCard(card, finalPosition)
 		local back = card:FindFirstChild("Back")
@@ -163,7 +157,6 @@ local function animateTwoCards(card1, card2)
 
 	wait(1.5)
 	script.Parent.Active = true
-	print("[DEBUG] Animação de 2 cartas concluída")
 end
 
 local canClick = true

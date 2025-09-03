@@ -11,7 +11,6 @@ if not contador then
 	contador.Name = "ContadorValue"
 	contador.Value = 0
 	contador.Parent = cartasFolder
-	print("[RollModule] ContadorValue criado automaticamente")
 end
 
 local isDouble = cartasFolder:FindFirstChild("IsDoubleRollActive")
@@ -20,10 +19,7 @@ if not isDouble then
 	isDouble.Name = "IsDoubleRollActive"
 	isDouble.Value = false
 	isDouble.Parent = cartasFolder
-	print("[RollModule] IsDoubleRollActive criado automaticamente")
 end
-
-print("[RollModule] Contador e IsDoubleRollActive prontos")
 
 -- Tiers
 local TIERS = {10, 100, 1000, 10000}
@@ -69,11 +65,9 @@ end
 
 -- Função principal de roll
 function M.DarRoll()
-	print("[RollModule] DarRoll chamado!")
 
 	local step = isDouble.Value and 2 or 1
 	contador.Value += 1
-	print("[RollModule] Contador atualizado:", contador.Value)
 
 	verificarRecompensa(contador.Value)
 
@@ -138,5 +132,4 @@ function M.GetState()
 	return contador.Value, TIERS[tier], tier
 end
 
-print("[RollModule] Finalizou carregamento")
 return M

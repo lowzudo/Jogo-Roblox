@@ -29,7 +29,7 @@ print("[RollModule] Contador e IsDoubleRollActive prontos")
 local TIERS = {10, 100, 1000, 10000}
 local tier = 1
 
--- TABELA DE RARIDADES (chance soma 100)
+-- TABELA DE RARIDADES
 local RARITY_CHANCES = {
 	{Name = "Comum", Chance = 60},
 	{Name = "Rara", Chance = 30},
@@ -41,27 +41,33 @@ local RARITY_CHANCES = {
 -- TABELA DE CARTAS
 local RARITY_CARDS = {
 	Comum = { "Gojo", "Gojo" },
-	Rara = { "CartaA", "CartaB", "CartaC", "CartaD", "CartaE", "CartaF", "CartaG", "CartaH", "CartaI", "CartaJ" },
+	Rara = { "CartaRara" },
 	Epica = { "CartaK", "CartaL", "CartaM", "CartaN", "CartaO" },
-	Lendaria = { "Sukuna" }, -- removi ""
-	Secreta = { "CartaSecreta" } -- coloquei 1 placeholder em vez de ""
+	Lendaria = { "CartaLendaria" },
+	Secreta = { "Sukuna" }
 }
 
--- Recompensas
-local RECOMPENSAS = {
-    [100] = "🏆 Recompensa de 10!",
-    [1000] = "🏆 Recompensa de 100!",
-    [10000] = "🏆 Recompensa de 1000!",
-    [100000] = "🏆 Recompensa de 10000!"
+-- TABELA DE PITTY POR VALOR DO CONTADOR
+local PITTY = {
+	[10] = "Rara",
+	[100] = "Epica",
+	[1000] = "Lendaria",
+	[10000] = "Secreta"
 }
 
-local function verificarRecompensa(valor)
-    if RECOMPENSAS[valor] then
-        print(RECOMPENSAS[valor])
-    end
+-- Função para pegar o tier atual
+function M.GetTier()
+	return tier
 end
 
--- FUNÇÃO PRINCIPAL
+-- Verifica se ganhou recompensa
+local function verificarRecompensa(valor)
+	if PITTY[valor] then
+		print("[RollModule] Pity ativado! Garantido:", PITTY[valor])
+	end
+end
+
+-- Função principal de roll
 function M.DarRoll()
 	print("[RollModule] DarRoll chamado!")
 
@@ -71,17 +77,26 @@ function M.DarRoll()
 
 	verificarRecompensa(contador.Value)
 
-	if contador.Value >= TIERS[tier] then
-		contador.Value = 0
-		if tier < #TIERS then
-			tier += 1
-		else
-			tier = #TIERS
-		end
+	-- Avança o tier se necessário
+	while contador.Value >= TIERS[tier] and tier < #TIERS do
+		contador.Value = contador.Value - TIERS[tier]
+		tier += 1
 		print("[RollModule] Avançou para Tier:", tier)
 	end
 
-	-- Sortear raridade
+	-- Verifica se algum pity deve ser ativado
+	if PITTY[contador.Value] then
+		local rarity = PITTY[contador.Value]
+		local cardsInRarity = RARITY_CARDS[rarity]
+		if cardsInRarity and #cardsInRarity > 0 then
+			local index = math.random(1, #cardsInRarity)
+			local pityCard = cardsInRarity[index]
+			print("[RollModule] Carta de PITY sorteada:", pityCard, "Raridade:", rarity)
+			return pityCard
+		end
+	end
+
+	-- Sorteio normal de raridade
 	local totalChances = 0
 	for _, rarityData in ipairs(RARITY_CHANCES) do
 		totalChances += rarityData.Chance
@@ -103,15 +118,14 @@ function M.DarRoll()
 		return "CartaInexistente"
 	end
 
-	-- Sortear carta da raridade
 	local cardsInRarity = RARITY_CARDS[chosenRarity]
 	if not cardsInRarity or #cardsInRarity == 0 then
 		warn("[RollModule] ERRO: Nenhuma carta definida para raridade:", chosenRarity)
 		return "CartaInexistente"
 	end
 
-	local randomCardIndex = math.random(1, #cardsInRarity)
-	local cardName = cardsInRarity[randomCardIndex]
+	local randomIndex = math.random(1, #cardsInRarity)
+	local cardName = cardsInRarity[randomIndex]
 
 	print("[RollModule] Raridade sorteada:", chosenRarity)
 	print("[RollModule] Carta sorteada:", cardName)
@@ -119,6 +133,7 @@ function M.DarRoll()
 	return cardName
 end
 
+-- Retorna estado atual (opcional)
 function M.GetState()
 	return contador.Value, TIERS[tier], tier
 end

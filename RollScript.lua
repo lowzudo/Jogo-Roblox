@@ -1,70 +1,50 @@
--- LocalScript dentro do seu botão de roll (RollButton)
+-- LocalScript no botão RollButton
 
--- Serviços
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Player e GUI
 local player = Players.LocalPlayer
 local gui = player:WaitForChild("PlayerGui")
 local screenGui = gui:WaitForChild("ScreenGui")
 
--- Pasta das cartas
 local cartasFolder = ReplicatedStorage:WaitForChild("Cartas")
-print("[DEBUG] CartasFolder encontrado:", cartasFolder)
+local rollModule = require(cartasFolder:WaitForChild("RollModule"))
 
--- Carregar módulo Roll
-local rollModule
-local success, err = pcall(function()
-	rollModule = require(cartasFolder:WaitForChild("RollModule"))
-end)
-if not success then
-	warn("[DEBUG] ERRO ao carregar RollModule:", err)
-else
-	print("[DEBUG] RollModule carregado com sucesso:", rollModule)
-end
-
--- Valores de estado
 local contador = cartasFolder:WaitForChild("ContadorValue")
 local isDouble = cartasFolder:WaitForChild("IsDoubleRollActive")
 local counterTemplate = cartasFolder:WaitForChild("CounterLabel")
-print("[DEBUG] Valores encontrados - Contador:", contador.Value, "IsDouble:", isDouble.Value)
 
 -- Cria contador visual
 local counterLabel = counterTemplate:Clone()
 counterLabel.Parent = screenGui
-print("[DEBUG] CounterLabel clonado e adicionado ao ScreenGui")
 
--- Config visuais
-local TIERS = {100, 1000, 10000, 100000}
+-- Config cores
+local TIERS = {10, 100, 1000, 10000}
 local COLORS = {
 	Color3.fromRGB(100, 180, 255),
 	Color3.fromRGB(180, 100, 255),
 	Color3.fromRGB(255, 200, 50),
 	Color3.fromRGB(255, 0, 0),
 }
-local tier = 1
+
+-- Atualiza GUI com contador e tier corretos
 local function applyVisual()
-	local text = tostring(contador.Value) .. " / " .. tostring(TIERS[tier])
+	local currentTier = rollModule.GetTier()
+	local text = tostring(contador.Value) .. " / " .. tostring(TIERS[currentTier])
 	counterLabel.Text = text
-	counterLabel.TextColor3 = COLORS[tier]
-	print("[DEBUG] Counter atualizado:", text, "Cor Tier:", tier)
+	counterLabel.TextColor3 = COLORS[currentTier]
 end
+
 contador.Changed:Connect(applyVisual)
 applyVisual()
 
-
-local canClick = true
-local COOLDOWN_TIME = 1.5
-
+-- Função fade-out
 local function fadeOutCard(card, duration)
 	local back = card:FindFirstChild("Back")
 	local front = card:FindFirstChild("Front")
-
 	if not back or not front then return end
 
-	-- Pega TextLabels dentro do Front
 	local frontTexts = {}
 	for _, obj in ipairs(front:GetDescendants()) do
 		if obj:IsA("TextLabel") or obj:IsA("TextButton") then
@@ -74,7 +54,6 @@ local function fadeOutCard(card, duration)
 
 	local steps = 20
 	local stepTime = duration / steps
-
 	for i = 1, steps do
 		local alpha = i / steps
 		back.ImageTransparency = alpha
@@ -84,7 +63,6 @@ local function fadeOutCard(card, duration)
 		end
 		wait(stepTime)
 	end
-
 	card:Destroy()
 end
 
@@ -188,57 +166,34 @@ local function animateTwoCards(card1, card2)
 	print("[DEBUG] Animação de 2 cartas concluída")
 end
 
--- Clique do botão
--- Clique do botão com cooldown
-script.Parent.MouseButton1Click:Connect(function()
-	if not canClick then return end -- bloqueia clique se estiver em cooldown
-	canClick = false
+local canClick = true
+local COOLDOWN_TIME = 1.5
 
-	print("[DEBUG] Botão clicado")
+script.Parent.MouseButton1Click:Connect(function()
+	if not canClick then return end
+	canClick = false
 	script.Parent.Active = false
 
-	if rollModule and rollModule.DarRoll then
-		print("[DEBUG] Chamando DarRoll()...")
-		if isDouble.Value then
-			local cardName1 = rollModule.DarRoll()
-			local cardName2 = rollModule.DarRoll()
-			print("[DEBUG] Resultados 2x:", cardName1, cardName2)
+	local rollsToDo = isDouble.Value and 2 or 1
+	local rolledCards = {}
 
-			local cardTemplate1 = cartasFolder:FindFirstChild(cardName1)
-			local cardTemplate2 = cartasFolder:FindFirstChild(cardName2)
-
-			if cardTemplate1 and cardTemplate2 then
-				print("[DEBUG] Cartas encontradas para 2x, clonando...")
-				local clonedCard1 = cardTemplate1:Clone()
-				local clonedCard2 = cardTemplate2:Clone()
-				clonedCard1.Parent = screenGui
-				clonedCard2.Parent = screenGui
-				animateTwoCards(clonedCard1, clonedCard2)
-			else
-				warn("[DEBUG] Uma ou ambas as cartas do 2x não foram encontradas!")
-				script.Parent.Active = true
-			end
-		else
-			local cardName = rollModule.DarRoll()
-			print("[DEBUG] Resultado 1x:", cardName)
-
-			local cardTemplate = cartasFolder:FindFirstChild(cardName)
-			if cardTemplate then
-				print("[DEBUG] Carta encontrada:", cardName, "-> clonando")
-				local clonedCard = cardTemplate:Clone()
-				clonedCard.Parent = screenGui
-				animateCard(clonedCard)
-			else
-				warn("[DEBUG] Carta", cardName, "não encontrada em Cartas!")
-				script.Parent.Active = true
-			end
+	for i = 1, rollsToDo do
+		local cardName = rollModule.DarRoll()
+		local cardTemplate = cartasFolder:FindFirstChild(cardName)
+		if cardTemplate then
+			local clonedCard = cardTemplate:Clone()
+			clonedCard.Parent = screenGui
+			table.insert(rolledCards, clonedCard)
 		end
-	else
-		warn("[DEBUG] RollModule não encontrado ou DarRoll ausente!")
-		script.Parent.Active = true
 	end
 
-	-- Reinicia o cooldown depois de X segundos
+	-- Animação
+	if #rolledCards == 1 then
+		animateCard(rolledCards[1])
+	elseif #rolledCards == 2 then
+		animateTwoCards(rolledCards[1], rolledCards[2])
+	end
+
 	task.delay(COOLDOWN_TIME, function()
 		canClick = true
 	end)

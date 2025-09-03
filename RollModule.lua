@@ -72,7 +72,7 @@ function M.DarRoll()
 	print("[RollModule] DarRoll chamado!")
 
 	local step = isDouble.Value and 2 or 1
-	contador.Value += step
+	contador.Value += 1
 	print("[RollModule] Contador atualizado:", contador.Value)
 
 	verificarRecompensa(contador.Value)

@@ -54,6 +54,40 @@ end
 contador.Changed:Connect(applyVisual)
 applyVisual()
 
+
+local canClick = true
+local COOLDOWN_TIME = 1.5
+
+local function fadeOutCard(card, duration)
+	local back = card:FindFirstChild("Back")
+	local front = card:FindFirstChild("Front")
+
+	if not back or not front then return end
+
+	-- Pega TextLabels dentro do Front
+	local frontTexts = {}
+	for _, obj in ipairs(front:GetDescendants()) do
+		if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+			table.insert(frontTexts, obj)
+		end
+	end
+
+	local steps = 20
+	local stepTime = duration / steps
+
+	for i = 1, steps do
+		local alpha = i / steps
+		back.ImageTransparency = alpha
+		front.ImageTransparency = alpha
+		for _, txt in ipairs(frontTexts) do
+			txt.TextTransparency = alpha
+		end
+		wait(stepTime)
+	end
+
+	card:Destroy()
+end
+
 -- Função animação de 1 carta
 local function animateCard(card)
 	print("[DEBUG] Iniciando animação de 1 carta:", card.Name)
@@ -70,7 +104,7 @@ local function animateCard(card)
 	front.Visible = false
 	card.Position = UDim2.fromScale(0.5, 1.0)
 
-	local moveUpInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local moveUpInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 	local upGoal = { Position = UDim2.fromScale(0.5, 0.17) }
 	local moveUpTween = TweenService:Create(card, moveUpInfo, upGoal)
 	moveUpTween:Play()
@@ -78,7 +112,7 @@ local function animateCard(card)
 
 	moveUpTween.Completed:Connect(function()
 		print("[DEBUG] Tween de subida finalizado -> iniciando flip")
-		local flipInfo = TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		local flipInfo = TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 		local shrinkGoal = { Size = UDim2.new(0, 0, originalSize.Y.Scale, 0) }
 		local shrinkTween = TweenService:Create(card, flipInfo, shrinkGoal)
 		shrinkTween:Play()
@@ -92,6 +126,8 @@ local function animateCard(card)
 			expandTween:Play()
 			expandTween.Completed:Connect(function()
 				print("[DEBUG] Animação concluída para carta:", card.Name)
+				-- remove a carta após 1 segundo
+				fadeOutCard(card,0.5)
 				script.Parent.Active = true
 			end)
 		end)
@@ -116,13 +152,13 @@ local function animateTwoCards(card1, card2)
 		front.Visible = false
 		card.Position = UDim2.fromScale(0.5, 1.0)
 
-		local moveUpInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		local moveUpInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		local upGoal = { Position = finalPosition }
 		local moveUpTween = TweenService:Create(card, moveUpInfo, upGoal)
 		moveUpTween:Play()
 
 		moveUpTween.Completed:Connect(function()
-			local flipInfo = TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			local flipInfo = TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 			local shrinkGoal = { Size = UDim2.new(0, 0, originalSize.Y.Scale, 0) }
 			local shrinkTween = TweenService:Create(card, flipInfo, shrinkGoal)
 			shrinkTween:Play()
@@ -132,6 +168,13 @@ local function animateTwoCards(card1, card2)
 				front.Visible = true
 				local expandTween = TweenService:Create(card, flipInfo, { Size = originalSize })
 				expandTween:Play()
+
+				expandTween.Completed:Connect(function()
+					-- Fade-out suave após 1s
+					task.delay(0.5, function()
+						fadeOutCard(card, 0.5) -- 0.5s de fade
+					end)
+				end)
 			end)
 		end)
 	end
@@ -146,7 +189,11 @@ local function animateTwoCards(card1, card2)
 end
 
 -- Clique do botão
+-- Clique do botão com cooldown
 script.Parent.MouseButton1Click:Connect(function()
+	if not canClick then return end -- bloqueia clique se estiver em cooldown
+	canClick = false
+
 	print("[DEBUG] Botão clicado")
 	script.Parent.Active = false
 
@@ -190,4 +237,9 @@ script.Parent.MouseButton1Click:Connect(function()
 		warn("[DEBUG] RollModule não encontrado ou DarRoll ausente!")
 		script.Parent.Active = true
 	end
+
+	-- Reinicia o cooldown depois de X segundos
+	task.delay(COOLDOWN_TIME, function()
+		canClick = true
+	end)
 end)

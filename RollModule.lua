@@ -26,7 +26,7 @@ end
 print("[RollModule] Contador e IsDoubleRollActive prontos")
 
 -- Tiers
-local TIERS = {100, 1000, 10000, 100000}
+local TIERS = {10, 100, 1000, 10000}
 local tier = 1
 
 -- TABELA DE RARIDADES (chance soma 100)
@@ -48,16 +48,17 @@ local RARITY_CARDS = {
 }
 
 -- Recompensas
+local RECOMPENSAS = {
+    [100] = "🏆 Recompensa de 10!",
+    [1000] = "🏆 Recompensa de 100!",
+    [10000] = "🏆 Recompensa de 1000!",
+    [100000] = "🏆 Recompensa de 10000!"
+}
+
 local function verificarRecompensa(valor)
-	if valor == 100 then
-		print("🏆 Recompensa de 100!")
-	elseif valor == 1000 then
-		print("🏆 Recompensa de 1000!")
-	elseif valor == 10000 then
-		print("🏆 Recompensa de 10000!")
-	elseif valor == 100000 then
-		print("🏆 Recompensa de 100000!")
-	end
+    if RECOMPENSAS[valor] then
+        print(RECOMPENSAS[valor])
+    end
 end
 
 -- FUNÇÃO PRINCIPAL
